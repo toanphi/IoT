@@ -1,0 +1,54 @@
+.button-list{
+    --c: black;
+    color: var(--c);
+    font-size: 16px;
+    border: 0.3em solid var(--c);
+    border-radius: 0.5em;
+    width: 20em;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-family: sans-serif;
+    letter-spacing: 0.1em;
+    text-align: center;
+    line-height: 3em;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    -webkit-transition: 0.5s;
+    -o-transition: 0.5s;
+    transition: 0.5s;
+    margin: 4px;
+}
+
+.button-wrap{
+    width: 60%;
+    display: grid;
+    grid-template-columns: auto auto auto;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 5vh;
+}
+
+/* .back-button{
+    background-color: #f1f1f1;
+    color: black;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 3px solid black;
+} */
+
+.save-button{
+    width: 10%;
+    border-radius: 6px;
+    background-color: #04AA6D;
+    color: white;
+    line-height: 3em;
+    font-weight: bold
+}
+
+.save-button-wrap{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}

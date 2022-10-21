@@ -1,0 +1,18 @@
+cd /home/pi/Desktop/iot_admin_backend
+mvn spring-boot:run
+cd /home/pi/Desktop/iot_admin_frontend
+npm start
+cd /home/pi/Desktop/iot_mqtt
+python MqttReceiver.py 
+
+// account frontend
+admin
+uet@iot@admin
+
+// check using port
+sudo lsof -i -P -n | grep LISTEN
+
+// anydesk id of old Pi
+380 271 748
+// anydesk id of new Pi
+966 013 786

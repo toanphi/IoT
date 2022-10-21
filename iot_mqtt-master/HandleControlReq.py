@@ -1,0 +1,130 @@
+# -*- coding: utf-8 -*-
+import requests
+import subprocess
+import os
+import json
+from PublishDataMqtt import publish_To_Topic
+from datetime import datetime
+
+BASE_URL = "http://localhost:3123"
+
+
+def login():
+    headers = {'Content-type': 'application/json'}
+    item = {
+        "username": "service",
+        "password": "uet@iot@service"
+    }
+    accessToken = requests.post(BASE_URL + "/authenticate", data = json.dumps(item), headers = headers).json()['data']['jwt']
+    return accessToken
+
+accessToken = login()
+
+# insert data
+def insertInputData(deviceId, command):
+    rawDate = datetime.today()
+    item = {
+        "id": 0,
+        "deviceId": deviceId,
+        "data": command,
+        "dataType": "input",
+        "createdDate": str(rawDate),
+        "dataType": "input"
+    }
+    print(json.dumps(item))
+    headers = {'Content-type': 'application/json', "Authorization": accessToken}
+    requests.post(BASE_URL + "/device/data", data = json.dumps(item), headers = headers)
+#   base url of the backend server
+#
+#   Switch default value 
+maxSwitchButton = 3
+
+##  find item with properties in a dictionary
+#   prop1 is search property
+#   prop2 is mapping property of prop1 in dictionary
+#   flag is used for exact searching
+def getLstPropFromDict(prop1, prop2, dictionary, flag):
+    items = []
+    for item in dictionary:
+        if (prop1 in item[prop2]):
+            if (flag == 1):
+                return item
+            items.append(item)
+    return items
+
+
+def controlling(input, device):
+    name = input['id']
+    command = input['command']
+
+    try:
+        # process switch data
+        if (device['productType'] == "switch"):
+            processSwitchCommand(device, command)
+            insertInputData(device['id'], command)
+
+        # process remote command    
+        if (device['productType'] in ["tivi", "fan", "air-conditioner"]):
+            processRemoteCommand(device, command)
+            insertInputData(device['id'], command)
+        return True
+    except Exception as e:
+        print("HandleControlReq controlling exception", e)
+        return False
+
+## switch is on wireless
+def processSwitchCommand(device, confirmCommand):
+    controlTopic = str(device['controlTopic'])
+    startIndex = controlTopic.rindex("/") + 1
+    endIndex = len(controlTopic)
+    deviceId = controlTopic[startIndex:endIndex]
+    lstGangsInput = {
+        "out1": 0,
+        "out2": 0,
+        "out3": 0,
+    }
+
+    # mapping data field in mqtt data of switch control
+    headers = {'Content-type': 'application/json', "Authorization": accessToken}
+    item = {
+        "controlTopic": controlTopic,
+    }
+    lastCommands = requests.post(BASE_URL + "/device/data/switch", data = json.dumps(item), headers = headers).json()['data']
+    for i in range(1, maxSwitchButton + 1):
+        gangStr = "out" + str(i)
+        try:
+            lstGangsInput[gangStr] = lastCommands[gangStr]
+        except Exception as e:
+            lstGangsInput[gangStr] = 0
+    devGangs = device['gangs']
+    devOut = "out" + str(devGangs)
+    if confirmCommand == "KEY_ON":
+        lstGangsInput[devOut] = 100
+    else:
+        lstGangsInput[devOut] = 0
+
+    # the final form of mqtt data
+    finalMessage = {
+        "id": deviceId,
+        "data":lstGangsInput
+    }
+    switchDataJson = json.dumps(finalMessage)
+    print(switchDataJson)
+    publish_To_Topic(controlTopic, switchDataJson)
+
+
+## remote command is processed by bash
+def processRemoteCommand(device, confirmCommand):
+    bashCommand(device['model'], confirmCommand)
+
+## bash to send ir control signal
+def bashCommand(id, key):
+    command = "irsend SEND_ONCE" + " " + id + " " + key
+    print(command)
+    process = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE)
+    output, error = process.communicate()
+    return(output)
+
+# controlling("đèn phòng ngủ 1_off")
+# controlling("tivi phòng ngủ_số 1")
+# controlling("quạt phòng ngủ_fanlow")
